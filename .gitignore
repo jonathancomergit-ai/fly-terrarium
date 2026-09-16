@@ -1,0 +1,4 @@
+# the connectome download (1.1 GB, public: male-cns.janelia.org) and the files prep.py builds from it
+data/
+__pycache__/
+*.pyc

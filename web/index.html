@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fly Terrarium</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪰</text></svg>">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>FLY TERRARIUM</h1>
+    <p>A fruit fly driven by its <b>real</b> wiring: 165,122 neurons and 124 million synapses from the MaleCNS v1.0 connectome, spiking live on your GPU.</p>
+  </div>
+  <div class="stats">
+    <div><span id="st-clock">0.0 s</span><label>fly time</label></div>
+    <div><span id="st-rate">-</span><label>vs real time</label></div>
+    <div><span id="st-active">0</span><label>neurons firing</label></div>
+  </div>
+</header>
+
+<main>
+  <section class="panel arena-panel">
+    <div class="toolbar" id="tools">
+      <button data-tool="sugar" class="on"><i>1</i>🍯 Sugar</button>
+      <button data-tool="bitter"><i>2</i>🧪 Bitter</button>
+      <button data-tool="fan"><i>3</i>💨 Fan</button>
+      <button data-tool="speaker"><i>4</i>🔊 Song</button>
+      <button data-tool="swat"><i>5</i>🖐 Swat</button>
+      <span class="hint">click to place · right-click removes · drag a fan to aim it</span>
+    </div>
+    <canvas id="arena"></canvas>
+    <div class="caption" id="caption">The body walks on autopilot. Whenever the brain's command neurons fire, they take over.</div>
+  </section>
+
+  <section class="panel brain-panel">
+    <canvas id="brain"></canvas>
+    <div class="legend" id="legend"></div>
+    <div class="brain-help">drag to rotate · scroll to zoom</div>
+  </section>
+
+  <section class="panel meters">
+    <h2>Senses <small>what the world feeds in (Poisson spikes)</small></h2>
+    <div id="sense-meters"></div>
+    <h2>Commands <small>what the brain sends out (Hz per neuron)</small></h2>
+    <div id="action-meters"></div>
+  </section>
+
+  <section class="panel lab">
+    <h2>Lab bench</h2>
+    <div class="lesions">
+      <p>Silence a neuron and see what the fly can't do any more:</p>
+      <label><input type="checkbox" data-silence="escape"> Giant fiber <code>DNp01</code> <em>escape jump</em></label>
+      <label><input type="checkbox" data-silence="feed"> <code>MN9</code> <em>proboscis / eating</em></label>
+      <label><input type="checkbox" data-silence="groom"> <code>aDN1/aDN2</code> <em>antenna grooming</em></label>
+      <label><input type="checkbox" data-silence="backward"> Moonwalker <code>MDN</code> <em>walking backward</em></label>
+    </div>
+    <div class="controls">
+      <label>Brain speed <input type="range" id="speed" min="0.1" max="1.5" step="0.05" value="1"> <span id="speed-v">1.00x</span></label>
+      <button id="pause">Pause</button>
+      <button id="reset">Reset brain</button>
+      <button id="clear">Clear arena</button>
+    </div>
+    <h2>Log</h2>
+    <ol id="log"></ol>
+  </section>
+</main>
+
+<div id="offline" hidden>
+  <div>
+    <h2>The brain server isn't answering</h2>
+    <p>Start it from this folder with <code>python server.py</code>, then reload.</p>
+  </div>
+</div>
+
+<script src="brain.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
