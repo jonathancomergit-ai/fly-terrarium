@@ -73,6 +73,9 @@ class FlyBrain:
         self.ring = torch.zeros((D, N), device=dev)        # delayed input, one row per step of the block
         self.S = torch.zeros((D, N), dtype=torch.bool, device=dev)  # who spiked at each step of the block
         self.input_p = torch.zeros(N, device=dev)          # per-neuron chance of an external spike per step
+        self.bias = torch.zeros(N, device=dev)             # mV of steady drive (unused by default)
+        self.sense_p = torch.zeros(N, device=dev)          # input from the named senses (sugar, wind...)
+        self.extra_p = torch.zeros(N, device=dev)          # input from the eyes (flyvis bridge)
         self.alive = torch.ones(N, dtype=torch.bool, device=dev)    # False = lesioned (silenced)
         self.spike_count = torch.zeros(N, dtype=torch.int32, device=dev)  # spikes since last take_spikes()
         self.rates = {k: 0.0 for k in SENSES}              # Hz, set by the world via set_rates()
@@ -87,7 +90,27 @@ class FlyBrain:
         for k, hz in self.rates.items():
             if hz > 0:
                 p[self.groups[k]] = hz * DT / 1000.0
-        self.input_p.copy_(p)   # copy_ (not =) so the captured CUDA graph sees the new values
+        self.sense_p.copy_(p)
+        self.input_p.copy_(self.sense_p + self.extra_p)   # copy_ (not =) so the CUDA graph sees it
+
+    def set_extra_rates(self, idx, hz):
+        """Poisson drive (Hz) for arbitrary neurons, e.g. the visual neurons fed by flyvis."""
+        self.extra_p.zero_()
+        self.extra_p[idx] = hz * DT / 1000.0
+        self.input_p.copy_(self.sense_p + self.extra_p)
+
+    def make_inputs(self, idx):
+        """Cut the synapses INTO these neurons: they're now driven from outside (like sensory neurons)."""
+        mask = torch.zeros(self.N, dtype=torch.bool, device=self.dev)
+        mask[idx] = True
+        # rebuild the CSR without those edges: a dead edge still costs GPU time every spike
+        pre = torch.repeat_interleave(torch.arange(self.N, device=self.dev), self.indptr[1:] - self.indptr[:-1])
+        keep = ~mask[self.post]
+        self.post, self.wsig = self.post[keep], self.wsig[keep]
+        counts = torch.bincount(pre[keep], minlength=self.N)
+        self.indptr = torch.zeros(self.N + 1, dtype=self.indptr.dtype, device=self.dev)
+        self.indptr[1:] = torch.cumsum(counts, 0)
+        return int((~keep).sum())
 
     def reset(self):
         self.v.fill_(V_REST); self.g.zero_(); self.ring.zero_(); self.ref.zero_()
@@ -102,7 +125,7 @@ class FlyBrain:
             self.ring[k].zero_()
             self.g += (torch.rand_like(self.v) < self.input_p) * W_INPUT
             free = self.ref <= 0
-            self.v += free * (DT * (self.g - (self.v - V_REST)) / TAU_M)
+            self.v += free * (DT * (self.g + self.bias - (self.v - V_REST)) / TAU_M)
             self.g -= DT * self.g / TAU_SYN
             spk = (self.v > V_TH) & self.alive
             self.S[k] = spk

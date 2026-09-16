@@ -37,3 +37,38 @@ the wiring (3 hops back from MN9: LB3 excites, LB1 inhibits) and confirmed in si
 - Vision for real: drive R1-R6 from a rendered 1D view of the arena, so turning comes from the optic lobes.
 - Male vs female: same terrarium, FlyWire v783 brain. Courtship song should matter more for a female.
 - Learning: switch dopamine back on as a plasticity signal on KC -> MBON synapses (odour + bitter = avoid).
+
+## Eyes (2026-09-16)
+**Eye map (`prep_eyes.py`).** Janelia put 12 columnar types into ~890 hex columns per eye (`assignedOlHex1/2`).
+- Lattice: the offsets that carry the most synapses between columns are (+-1,0), (0,+-1), +-(1,1), so it's a
+  120-degree hex grid.
+- Up = hex1+hex2, because the dorsal-rim R7d/R8d sit at high values.
+- Forward = hex1-hex2, because that points toward the antennal lobe side of the brain (low EM z; KCs and the VNC are high z).
+- Photoreceptors take the column of their lamina targets. Everything else takes the synapse-weighted
+  mean position of its inputs (4 rounds), which places ~75k visual neurons.
+
+**Why flyvis.** With spiking LIF, the visual system was dead past the photoreceptors. Photoreceptors are
+histaminergic (inhibitory), and inhibiting a silent neuron does nothing. A near-threshold bias on
+L/Mi/Tm cells made them fire, but nothing moved with the image and T4/T5 stayed silent. Real
+lamina/medulla neurons are graded. flyvis (Python <= 3.12, so `.venv-eye`) is an analog model with
+trained parameters, and its T4/T5 really are direction selective.
+
+**Bridge (`eyes.py`).**
+- Camera frame: the left half goes to the left eye and the right half is mirrored for the right eye.
+  flyvis image x = forward, y = down. Checked with bars through the server: rightward motion reads
+  back->front in the left eye and front->back in the right eye, and up reads as up in both.
+- Every flyvis type that also exists in MaleCNS (49 types, 63k neurons) drives those MaleCNS neurons
+  at the nearest hexal. Rate = 90 Hz x (activity - running average over 0.3 s), clipped at 0.
+  Using a running average instead of the grey-screen baseline made the bridge carry CHANGE only;
+  before that, a still dark disc fired the giant fiber.
+- The bridged neurons become inputs: their incoming synapses are cut and the CSR is rebuilt
+  (4.8M edges), because otherwise spikes into them cost GPU time and do nothing.
+- Results: approaching disc GF 41 Hz / LPLC2 1.4; receding GF 19 / LPLC2 0; still image and small dot 0.
+  Receding still drives LC4 and the GF somewhat, which isn't ideal.
+
+**Gotchas hit:**
+- datamate (flyvis's storage) deleted an open HDF5 file, which Windows refuses. `setup_eyes.py` patches it.
+- `steady_state()` resets the stimulus buffer, so call it BEFORE `stimulus.add_input`.
+- torch's default device is per-THREAD, and flyvis relies on it. The HTTP server answers on new threads,
+  so `FlyEyes.step` runs inside `with torch.device(...)`.
+- flyvis dropped to 0.2-0.4x real time while a game held 60% of the GPU. It's ~0.9x on an idle GPU.

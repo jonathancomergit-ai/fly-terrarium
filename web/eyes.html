@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fly Eyes</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👁</text></svg>">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="eyes.css">
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>FLY EYES</h1>
+    <p>Your camera, seen through a fruit fly's compound eyes. flyvis runs the optic lobe, then the <b>real</b> MaleCNS wiring decides what to do about it. Try moving your hand quickly toward the camera. <a href="index.html">← back to the Terrarium</a></p>
+  </div>
+  <div class="stats">
+    <div><span id="st-fps">-</span><label>eye frames / s</label></div>
+    <div><span id="st-rate">-</span><label>brain vs real time</label></div>
+    <div><span id="st-active">0</span><label>neurons firing</label></div>
+  </div>
+</header>
+
+<main class="eyes-main">
+  <section class="panel cam-panel">
+    <div class="toolbar">
+      <button id="src-camera" class="on">📷 Camera</button>
+      <button id="src-loom">🔴 Demo: approaching ball</button>
+      <button id="src-bars">▮ Demo: moving bars</button>
+      <span class="hint">the fly faces you, so this is NOT a mirror</span>
+    </div>
+    <div class="cam-wrap">
+      <canvas id="cam"></canvas>
+      <div class="cam-split"><span>left eye</span><span>right eye</span></div>
+      <div id="cam-msg" class="cam-msg" hidden></div>
+    </div>
+  </section>
+
+  <section class="panel fly-panel">
+    <h2>What the eyes receive <small>721 ommatidia per eye (R1 photoreceptors)</small></h2>
+    <canvas id="fly-view"></canvas>
+  </section>
+
+  <section class="panel strip">
+    <h2>What the optic lobe does with it <small>flyvis: analog neurons, connectome-built, trained on motion</small></h2>
+    <div id="layers" class="layers"></div>
+    <div class="dir-legend">
+      Motion colours:
+      <span><b style="background:#ff6b6b"></b>front → back (outward)</span>
+      <span><b style="background:#6cc3ff"></b>back → front (inward)</span>
+      <span><b style="background:#9fe870"></b>upward</span>
+      <span><b style="background:#f5b53d"></b>downward</span>
+    </div>
+  </section>
+
+  <section class="panel brain-panel eyes-brain">
+    <canvas id="brain"></canvas>
+    <div class="legend" id="legend"></div>
+    <div class="brain-help">drag to rotate · scroll to zoom</div>
+  </section>
+
+  <section class="panel meters">
+    <h2>What the brain makes of it <small>MaleCNS spiking neurons, Hz per neuron</small></h2>
+    <div id="vision-meters"></div>
+    <div id="jump" class="jump">🪰 JUMP!</div>
+    <p class="note">flyvis drives 63k MaleCNS optic lobe neurons by type and eye position. Everything past them (the lobula, looming detectors, giant fiber) is the spiking MaleCNS model. In tests an approaching disc drove the giant fiber about 2x harder than a shrinking one, and a still image drove nothing.</p>
+    <ol id="log"></ol>
+  </section>
+</main>
+
+<div id="offline" hidden>
+  <div>
+    <h2>The eyes aren't available</h2>
+    <p id="offline-msg">Start the server with the eye environment: <code>play.bat</code> (or <code>.venv-eye\Scripts\python server.py</code>), then reload.</p>
+  </div>
+</div>
+
+<script src="brain.js"></script>
+<script src="eyes.js"></script>
+</body>
+</html>
