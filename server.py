@@ -46,6 +46,32 @@ brain = FlyBrain()
 lock = threading.Lock()
 state = {"speed": 1.0, "paused": False, "sim_rate": 0.0, "last_frame": time.time()}
 
+# ---------------------------------------------------------------- eyes (optional: needs the Python 3.12 flyvis env)
+eyes = None
+eye_lock = threading.Lock()
+eye_state = {"last": 0.0, "active": False}
+VISION_GROUPS = {"LPLC2": ["LPLC2"], "LC4": ["LC4"], "LPLC1": ["LPLC1"], "LC11": ["LC11"]}
+vision_idx = {}
+try:
+    from eyes import SHOW as EYE_LAYERS, FlyEyes
+    print("opening the eyes (flyvis)...")
+    eyes = FlyEyes()
+    _typ = np.array(json.loads((HERE / "data" / "neurons.json").read_text())["type"])
+    _E = np.load(HERE / "data" / "eyes.npz")
+    bridge_idx = eyes.build_bridge(_typ, _E["eye_all"], _E["fwd_all"], _E["up_all"], brain.dev)
+    dropped = brain.make_inputs(bridge_idx)
+    vision_idx = {k: torch.from_numpy(np.where(np.isin(_typ, v))[0]).to(brain.dev) for k, v in VISION_GROUPS.items()}
+    print(f"eyes ready: {len(bridge_idx)} MaleCNS visual neurons driven by flyvis ({dropped:,} inner edges cut)")
+    eye_meta = json.dumps({
+        "hex": eyes.hex_uv.tolist(),
+        "layers": [{"id": a, "name": b, "desc": c} for a, b, c in EYE_LAYERS],
+        "vision": {k: int(len(v)) for k, v in vision_idx.items()},   # group sizes, for Hz per neuron
+    }).encode()
+except Exception as err:  # flyvis missing (e.g. Python 3.13) -> the Terrarium still works
+    eyes = None
+    eye_meta = json.dumps({"error": f"eyes unavailable: {err}"}).encode()
+    print(f"(eyes off: {err})")
+
 # ---------------------------------------------------------------- static brain geometry (sent once)
 pos = brain.pos.astype(np.float32)
 centre = (pos.min(0) + pos.max(0)) / 2
@@ -62,6 +88,7 @@ meta = json.dumps({
     "groups": meta_json["groups"],
     "senses": SENSES,
     "actions": ACTIONS,
+    "eyes": eyes is not None,
 }).encode()
 
 
@@ -86,6 +113,11 @@ def brain_loop():
                 brain.run_ms(7.2)  # 4 blocks
         else:
             time.sleep(0.001)
+        if eye_state["active"] and time.time() - eye_state["last"] > 1.0:
+            eye_state["active"] = False
+            with lock:
+                brain.extra_p.zero_()
+                brain.input_p.copy_(brain.sense_p)
         now = time.perf_counter()
         if now - rate_t > 0.5:
             state["sim_rate"] = (brain.sim_ms - rate_sim) / ((now - rate_t) * 1000)
@@ -113,12 +145,16 @@ class Handler(SimpleHTTPRequestHandler):
             return self.send_bytes(geometry, "application/octet-stream")
         if self.path == "/meta.json":
             return self.send_bytes(meta, "application/json")
+        if self.path == "/eye_meta.json":
+            return self.send_bytes(eye_meta, "application/json")
         return super().do_GET()
 
     def do_POST(self):
         body = self.rfile.read(int(self.headers.get("Content-Length", 0)) or 0)
-        req = json.loads(body or b"{}")
         state["last_frame"] = time.time()
+        if self.path == "/eye":
+            return self.eye_frame(body)
+        req = json.loads(body or b"{}")
 
         if self.path == "/reset":
             with lock:
@@ -144,15 +180,39 @@ class Handler(SimpleHTTPRequestHandler):
                     if gname in brain.groups:
                         alive[brain.groups[gname]] = False
                 brain.alive.copy_(alive)
+            vision = {k: int(brain.spike_count[v].sum()) for k, v in vision_idx.items()}
             idx, vals, acts = brain.take_spikes()
             sim_ms = brain.sim_ms
 
         head = json.dumps({
-            "acts": acts, "simMs": sim_ms, "active": int(len(idx)),
+            "acts": acts, "vision": vision, "simMs": sim_ms, "active": int(len(idx)),
             "simRate": round(state["sim_rate"], 2),
         }).encode()
         head += b" " * (-(len(head) + 4) % 4)  # pad so the int32 array starts on a 4-byte boundary
         out = struct.pack("<I", len(head)) + head + idx.astype("<i4").tobytes() + vals.tobytes()
+        self.send_bytes(out, "application/octet-stream")
+
+
+    def eye_frame(self, body):
+        """body = uint16 width, uint16 height, then width*height grey bytes (camera frame, not mirrored).
+        Reply = uint32 json length, json, then for each eye layer: 2 x 721 bytes (left eye, right eye)."""
+        if eyes is None:
+            return self.send_bytes(bytes(4), "application/octet-stream")  # json length 0 = no eyes
+        w, h = struct.unpack_from("<HH", body, 0)
+        gray = np.frombuffer(body, np.uint8, w * h, 4).reshape(h, w)
+        now = time.time()
+        with eye_lock:
+            # advance the eyes by the real time since the last frame (10 ms steps, at most 5)
+            gap = now - eye_state["last"] if eye_state["active"] else 0.03
+            steps = max(1, min(5, round(gap / 0.01)))
+            eye_state["last"], eye_state["active"] = now, True
+            eyes.step(gray, steps)
+            rates = eyes.bridge_rates()
+            maps = eyes.layer_maps()
+        with lock:
+            brain.set_extra_rates(bridge_idx, rates)
+        head = json.dumps({"steps": steps}).encode()
+        out = struct.pack("<I", len(head)) + head + b"".join(maps[a].tobytes() for a, _, _ in EYE_LAYERS)
         self.send_bytes(out, "application/octet-stream")
 
 

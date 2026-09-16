@@ -23,6 +23,8 @@ header {
 h1 { margin: 0; font: 700 20px/1 var(--mono); letter-spacing: .18em; color: var(--accent); }
 .brand p { margin: 6px 0 0; color: var(--dim); max-width: 720px; }
 .brand b { color: var(--text); }
+.eyes-link { color: var(--accent); text-decoration: none; margin-left: 6px; white-space: nowrap; }
+.eyes-link:hover { text-decoration: underline; }
 .stats { display: flex; gap: 22px; }
 .stats div { text-align: right; }
 .stats span { display: block; font: 600 20px/1.1 var(--mono); }
