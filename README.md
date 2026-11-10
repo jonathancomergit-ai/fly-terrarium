@@ -90,3 +90,7 @@ See `NOTES.md` for the model, the calibration story, and ideas for what's next.
   activity across the fly visual system", *Nature*. MIT license. https://github.com/TuragaLab/flyvis.
   Its eye model uses its own (older) optic lobe reconstruction, not MaleCNS.
 - This is a toy for exploring, not a scientific result. See "What's real and what's cartoon" above.
+
+## Licence
+The code in this repo is MIT licensed (see [LICENSE](LICENSE)). The connectome data and the libraries
+credited above keep their own licences.
