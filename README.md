@@ -67,6 +67,21 @@ Checked responses (`python sim.py`):
 | Wind (Johnston's organ C/E) | aDN grooming at ~250 Hz, plus backing up |
 | Looming (LPLC2/LC4) | Giant fiber DNp01 at ~415 Hz, within 60 ms |
 
+## What went wrong (and how I fixed it)
+
+- **The brain had seizures.** With the published neuron numbers unchanged, one sip of sugar set about 20,000 neurons
+  firing flat out forever. I turned off the fast effect of dopamine, serotonin and octopamine (they're slow modulators
+  in real flies), cut the 643k Kenyon cell to Kenyon cell links that made a self-exciting blob, and halved synapse
+  strength after a sweep from 0.3 to 0.6. At 0.5 every reflex still works and the activity dies back down.
+- **Sensory neurons were talking to each other.** In the data, sensory axons synapse onto each other, and that kept the
+  loop going. Now they only listen to the world.
+- **The eyes went dark.** Early fly vision is analog, and a spiking model just went silent past the photoreceptors. So
+  the eyes run flyvis instead, and it drives the matching neurons in the spiking brain.
+- **Tiring the neurons made it worse.** I tried spike-frequency adaptation to calm things down, but it tired out the
+  inhibitory neurons too, so it backfired and I dropped it.
+
+The full story is in [NOTES.md](NOTES.md).
+
 ## Files
 - `prep.py`: raw download -> `data/brain.npz` + `data/neurons.json` (run once)
 - `sim.py`: the LIF brain on the GPU (run it alone for the sanity experiments)
@@ -94,3 +109,8 @@ See `NOTES.md` for the model, the calibration story, and ideas for what's next.
 ## Licence
 The code in this repo is MIT licensed (see [LICENSE](LICENSE)). The connectome data and the libraries
 credited above keep their own licences.
+
+## How to cite
+
+If this helps your work, there's a [CITATION.cff](CITATION.cff) (GitHub shows a "Cite this repository" button for it).
+Please cite the connectome paper and Shiu et al. too, since the real science is theirs!
