@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fly Eyes</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👁</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='%23c79bff'/></svg>">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="eyes.css">
 </head>
@@ -24,8 +24,8 @@
 <main class="eyes-main">
   <section class="panel cam-panel">
     <div class="toolbar">
-      <button id="src-camera" class="on">📷 Camera</button>
-      <button id="src-loom">🔴 Demo: approaching ball</button>
+      <button id="src-camera" class="on">Camera</button>
+      <button id="src-loom">Demo: approaching ball</button>
       <button id="src-bars">▮ Demo: moving bars</button>
       <span class="hint">the fly faces you, so this is NOT a mirror</span>
     </div>
@@ -62,7 +62,7 @@
   <section class="panel meters">
     <h2>What the brain makes of it <small>MaleCNS spiking neurons, Hz per neuron</small></h2>
     <div id="vision-meters"></div>
-    <div id="jump" class="jump">🪰 JUMP!</div>
+    <div id="jump" class="jump">JUMP!</div>
     <p class="note">flyvis drives 63k MaleCNS optic lobe neurons by type and eye position. Everything past them (the lobula, looming detectors, giant fiber) is the spiking MaleCNS model. In tests an approaching disc drove the giant fiber about 2x harder than a shrinking one, and a still image drove nothing.</p>
     <ol id="log"></ol>
   </section>
