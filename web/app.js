@@ -391,7 +391,7 @@ function drawArena(time) {
       g.beginPath(); g.arc(s.x, s.y, 16 + p * 360, 0, Math.PI * 2); g.stroke();
     }
     g.fillStyle = "#c79bff"; g.font = "26px system-ui"; g.textAlign = "center"; g.textBaseline = "middle";
-    g.fillText("🔊", s.x, s.y);
+    g.fillText("♪", s.x, s.y);   // a music note (a text symbol, not an emoji)
   }
 
   // food drops
@@ -416,7 +416,7 @@ function drawArena(time) {
       const q = (s.t - SWAT_TIME) / 0.6;
       g.globalAlpha = 1 - q;
       g.font = "150px system-ui"; g.textAlign = "center"; g.textBaseline = "middle";
-      g.fillText("🖐", s.x, s.y);
+      g.font = "bold 64px system-ui"; g.fillText("SWAT!", s.x, s.y);
       g.globalAlpha = 1;
     }
   }
